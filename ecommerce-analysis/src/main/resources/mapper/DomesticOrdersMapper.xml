@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ecommerce.ecommerceanalysis.mapper.DomesticOrdersMapper">
+
+    <!-- 查询全部国内订单 -->
+    <select id="listAll" resultType="com.ecommerce.ecommerceanalysis.entity.domestic.DomesticOrders">
+        SELECT * FROM domestic_orders
+    </select>
+
+    <!-- 按商品类别统计销量 -->
+    <select id="countByCategory" resultType="com.ecommerce.ecommerceanalysis.entity.domestic.DomesticCategoryCount">
+        SELECT product_category, COUNT(*) AS count FROM domestic_orders GROUP BY product_category
+    </select>
+
+    <!-- 按城市统计订单量 -->
+    <select id="countByCity" resultType="com.ecommerce.ecommerceanalysis.entity.domestic.DomesticCityCount">
+        SELECT user_city, COUNT(*) AS count FROM domestic_orders GROUP BY user_city
+    </select>
+
+    <!-- 按月份统计消费趋势 -->
+    <select id="getMonthlyTrend" resultType="com.ecommerce.ecommerceanalysis.entity.domestic.DomesticMonthTrend">
+        SELECT DATE_FORMAT(purchase_time, '%Y-%m') AS month, SUM(consumption_amount) AS total
+        FROM domestic_orders
+        GROUP BY month
+        ORDER BY month
+    </select>
+
+    <!-- 统计订单总数 -->
+    <select id="countTotal" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM domestic_orders
+    </select>
+
+    <!-- 统计销售总额 -->
+    <select id="sumAmount" resultType="java.lang.Double">
+        SELECT SUM(consumption_amount) FROM domestic_orders
+    </select>
+
+    <!-- 按日期统计订单数 -->
+    <select id="getDateCount" resultType="com.ecommerce.ecommerceanalysis.entity.domestic.DomesticDateCount">
+        SELECT DATE_FORMAT(purchase_time, '%Y-%m-%d') AS date, COUNT(*) AS count
+        FROM domestic_orders
+        GROUP BY date
+        ORDER BY date DESC
+        LIMIT 30
+    </select>
+
+    <!-- 搜索订单（带分页 + 关键词/品类筛选） -->
+    <select id="searchOrders" resultType="map">
+        SELECT 
+            id, 
+            user_id AS userId, 
+            user_name AS userName, 
+            product_id AS productId, 
+            product_name AS productName, 
+            product_category AS productCategory, 
+            product_category AS category, 
+            unit_price AS unitPrice, 
+            purchase_time AS purchaseTime, 
+            purchase_quantity AS quantity, 
+            consumption_amount AS amount, 
+            user_city AS userCity, 
+            user_city AS city, 
+            user_name AS customer, 
+            DATE(purchase_time) AS date, 
+            '已完成' AS status, 
+            consumption_amount AS consumptionAmount, 
+            user_gender AS userGender, 
+            user_age AS userAge
+        FROM domestic_orders
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (id LIKE CONCAT('%', #{keyword}, '%')
+                     OR user_name LIKE CONCAT('%', #{keyword}, '%')
+                     OR product_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="category != null and category != '' and category != '全部'">
+                AND product_category = #{category}
+            </if>
+        </where>
+        ORDER BY purchase_time DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 统计筛选后的总数 -->
+    <select id="countSearchOrders" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM domestic_orders
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (id LIKE CONCAT('%', #{keyword}, '%')
+                     OR user_name LIKE CONCAT('%', #{keyword}, '%')
+                     OR product_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="category != null and category != '' and category != '全部'">
+                AND product_category = #{category}
+            </if>
+        </where>
+    </select>
+
+    <!-- 金额+订单数统计（带筛选） -->
+    <select id="getAmountStats" resultType="map">
+        SELECT COUNT(*) AS order_count, COALESCE(SUM(consumption_amount), 0) AS amount
+        FROM domestic_orders
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (id LIKE CONCAT('%', #{keyword}, '%')
+                     OR user_name LIKE CONCAT('%', #{keyword}, '%')
+                     OR product_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="category != null and category != '' and category != '全部'">
+                AND product_category = #{category}
+            </if>
+        </where>
+    </select>
+
+    <!-- 按分类统计(返回Map) -->
+    <select id="countByCategoryForMap" resultType="map">
+        SELECT product_category AS name, COUNT(*) AS value
+        FROM domestic_orders
+        WHERE product_category IS NOT NULL
+        GROUP BY product_category ORDER BY value DESC
+    </select>
+
+    <!-- 供应链列表 -->
+    <select id="getSupplyList" resultType="map">
+        SELECT name, category, price, supplier, stock
+        FROM domestic_products LIMIT 20
+    </select>
+
+</mapper>

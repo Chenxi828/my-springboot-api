@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//MyBatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ecommerce.ecommerceanalysis.mapper.SelectionResultMapper">
+    <insert id="insert">
+        INSERT INTO selection_result(cn_category, br_category, demand_score, growth_score, competition_score, profit_score, total_score, reason)
+        VALUES(#{param1},#{param2},#{param3},#{param4},#{param5},#{param6},#{param7},#{param8})
+    </insert>
+
+    <update id="update">
+        UPDATE selection_result SET demand_score=#{param2}, growth_score=#{param3}, competition_score=#{param4}, profit_score=#{param5}, total_score=#{param6}, reason=#{param7}
+        WHERE cn_category=#{param1}
+    </update>
+
+    <select id="getByCategory" resultType="map">
+        SELECT * FROM selection_result WHERE cn_category=#{cnCategory}
+    </select>
+
+    <select id="getAll" resultType="map">
+        SELECT * FROM selection_result ORDER BY id DESC
+    </select>
+</mapper>

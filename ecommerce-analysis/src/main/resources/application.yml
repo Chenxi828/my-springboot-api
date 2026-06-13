@@ -1,0 +1,51 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  # 排除 Redis 自动配置，避免本地未启动 Redis 时项目闪退
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+  datasource:
+    url: jdbc:mysql://localhost:3306/ecommerce_db?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: 0
+    timeout: 10000
+    lettuce:
+      pool:
+        max-active: 8
+        max-wait: -1
+        max-idle: 8
+        min-idle: 0
+      shutdown-timeout: 100
+    connect-timeout: 2000
+
+cache:
+  type: simple
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+jwt:
+  secret: ${JWT_SECRET:Ecommerce@2026!SecretKeyForJWTTokenAuthentication}
+  expiration: 86400000
+
+deepseek:
+  api-key: ${DEEPSEEK_API_KEY:sk-fb2822ad517b488d83a477a1b6be06a4}
+  base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+  model: deepseek-chat
+  timeout: 60000
+
+mysql:
+  explain:
+    enable: false
+  showSQL: false

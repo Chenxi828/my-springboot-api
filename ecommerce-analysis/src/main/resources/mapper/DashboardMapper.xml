@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ecommerce.ecommerceanalysis.mapper.DashboardMapper">
+
+    <!-- 巴西订单总数 -->
+    <select id="getBrazilOrdersCount" resultType="int">
+        SELECT COUNT(*) FROM olist_orders
+    </select>
+
+    <!-- 巴西销售总额 -->
+    <select id="getBrazilOrdersAmount" resultType="double">
+        SELECT COALESCE(SUM(price * quantity), 0) FROM olist_order_items
+    </select>
+
+    <!-- 国内订单总数 -->
+    <select id="getDomesticOrdersCount" resultType="int">
+        SELECT COUNT(*) FROM domestic_orders
+    </select>
+
+    <!-- 国内销售总额 -->
+    <select id="getDomesticOrdersAmount" resultType="double">
+        SELECT COALESCE(SUM(consumption_amount), 0) FROM domestic_orders
+    </select>
+
+    <!-- 巴西城市分布（前10） -->
+    <select id="getBrazilCityDistribution" resultType="map">
+        SELECT 
+            customer_city AS name, 
+            COUNT(*) AS value 
+        FROM olist_orders 
+        WHERE customer_city IS NOT NULL AND customer_city != ''
+        GROUP BY customer_city 
+        ORDER BY value DESC 
+        LIMIT 10
+    </select>
+
+    <!-- 国内城市分布（前10） -->
+    <select id="getDomesticCityDistribution" resultType="map">
+        SELECT 
+            user_city AS name, 
+            COUNT(*) AS value 
+        FROM domestic_orders 
+        WHERE user_city IS NOT NULL AND user_city != ''
+        GROUP BY user_city 
+        ORDER BY value DESC 
+        LIMIT 10
+    </select>
+
+    <!-- 巴西订单状态统计 -->
+    <select id="getBrazilOrderStatus" resultType="map">
+        SELECT 
+            order_status AS name, 
+            COUNT(*) AS value 
+        FROM olist_orders 
+        WHERE order_status IS NOT NULL AND order_status != ''
+        GROUP BY order_status
+    </select>
+
+    <!-- 国内订单状态统计 -->
+    <select id="getDomesticOrderStatus" resultType="map">
+        SELECT 
+            order_status AS name, 
+            COUNT(*) AS value 
+        FROM domestic_orders 
+        WHERE order_status IS NOT NULL AND order_status != ''
+        GROUP BY order_status
+    </select>
+
+</mapper>

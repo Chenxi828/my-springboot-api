@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ecommerce.ecommerceanalysis.mapper.TaxRatesMapper">
+
+    <!-- 获取指定国家和品类的税率 -->
+    <select id="getTaxRate" resultType="map">
+        SELECT 
+            id,
+            country,
+            country_name AS countryName,
+            category,
+            import_tax_rate AS importTaxRate,
+            vat_rate AS vatRate,
+            consumption_tax_rate AS consumptionTaxRate,
+            effective_tax_rate AS effectiveTaxRate,
+            hs_code AS hsCode,
+            description,
+            policy_changes AS policyChanges,
+            tax_tips AS taxTips,
+            create_time AS createTime,
+            update_time AS updateTime
+        FROM tax_rates
+        <where>
+            <if test="country != null and country != ''">
+                AND country = #{country}
+            </if>
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+        </where>
+        LIMIT 1
+    </select>
+
+    <!-- 获取所有税率列表 -->
+    <select id="getAllTaxRates" resultType="map">
+        SELECT 
+            id,
+            country,
+            country_name AS countryName,
+            category,
+            import_tax_rate AS importTaxRate,
+            vat_rate AS vatRate,
+            consumption_tax_rate AS consumptionTaxRate,
+            effective_tax_rate AS effectiveTaxRate,
+            hs_code AS hsCode,
+            description,
+            policy_changes AS policyChanges,
+            tax_tips AS taxTips
+        FROM tax_rates
+        ORDER BY country, category
+    </select>
+
+    <!-- 获取指定国家的税率列表 -->
+    <select id="getTaxRatesByCountry" resultType="map">
+        SELECT 
+            id,
+            country,
+            country_name AS countryName,
+            category,
+            import_tax_rate AS importTaxRate,
+            vat_rate AS vatRate,
+            consumption_tax_rate AS consumptionTaxRate,
+            effective_tax_rate AS effectiveTaxRate,
+            hs_code AS hsCode,
+            description
+        FROM tax_rates
+        WHERE country = #{country}
+        ORDER BY category
+    </select>
+
+    <!-- 获取汇率 -->
+    <select id="getExchangeRate" resultType="map">
+        SELECT 
+            id,
+            from_currency AS fromCurrency,
+            to_currency AS toCurrency,
+            rate,
+            update_time AS updateTime
+        FROM exchange_rates
+        WHERE from_currency = #{fromCurrency}
+          AND to_currency = #{toCurrency}
+        LIMIT 1
+    </select>
+
+    <!-- 获取所有汇率 -->
+    <select id="getAllExchangeRates" resultType="map">
+        SELECT 
+            id,
+            from_currency AS fromCurrency,
+            to_currency AS toCurrency,
+            rate,
+            update_time AS updateTime
+        FROM exchange_rates
+        ORDER BY from_currency, to_currency
+    </select>
+
+</mapper>

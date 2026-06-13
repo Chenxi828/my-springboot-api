@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ecommerce.ecommerceanalysis.mapper.OrdersMapper">
+
+    <!-- 对应 listAll 方法（不带分页） -->
+    <select id="listAll" resultType="com.ecommerce.ecommerceanalysis.entity.Orders">
+        SELECT 
+            order_id AS id,
+            order_id AS orderId,
+            customer_id AS customerId,
+            order_status AS orderStatus,
+            order_purchase_timestamp AS orderPurchaseTimestamp,
+            '电子产品' AS productCategory,
+            'credit_card' AS paymentType,
+            'Sao Paulo' AS customerCity
+        FROM olist_orders
+    </select>
+
+    <!-- 对应 listAllWithPage(int offset, int size) 方法（带分页） -->
+    <select id="listAllWithPage" resultType="com.ecommerce.ecommerceanalysis.entity.Orders" parameterType="map">
+        SELECT 
+            o.order_id AS id,
+            o.order_id AS orderId,
+            o.customer_id AS customerId,
+            o.order_status AS orderStatus,
+            o.order_purchase_timestamp AS orderPurchaseTimestamp,
+            p.product_category_name AS productCategory,
+            'credit_card' AS paymentType,
+            c.customer_city AS customerCity,
+            oi.price AS amount,
+            oi.quantity AS quantity,
+            p.product_category_name AS category
+        FROM olist_orders o 
+        LEFT JOIN olist_order_items oi ON o.order_id = oi.order_id
+        LEFT JOIN olist_products p ON oi.product_id = p.product_id
+        LEFT JOIN olist_customers c ON o.customer_id = c.customer_id
+        ORDER BY o.order_purchase_timestamp DESC
+        LIMIT #{param1}, #{param2}
+    </select>
+
+    <!-- 对应 countByCategory 方法 - 使用 olist_order_items 和 olist_products 表 -->
+    <select id="countByCategory" resultType="com.ecommerce.ecommerceanalysis.entity.domestic.DomesticCategoryCount">
+        SELECT p.product_category_name AS productCategory, COUNT(*) AS count 
+        FROM olist_orders o 
+        JOIN olist_order_items oi ON o.order_id = oi.order_id 
+        JOIN olist_products p ON oi.product_id = p.product_id 
+        GROUP BY p.product_category_name
+    </select>
+
+    <!-- 对应 countByCity 方法 - 使用 olist_customers 表 -->
+    <select id="countByCity" resultType="com.ecommerce.ecommerceanalysis.entity.domestic.DomesticCityCount">
+        SELECT c.customer_city AS userCity, COUNT(*) AS count 
+        FROM olist_orders o 
+        JOIN olist_customers c ON o.customer_id = c.customer_id 
+        GROUP BY c.customer_city
+    </select>
+
+    <!-- 对应 getMonthlyTrend 方法 -->
+    <select id="getMonthlyTrend" resultType="com.ecommerce.ecommerceanalysis.entity.domestic.DomesticMonthTrend">
+        SELECT DATE_FORMAT(order_purchase_timestamp, '%Y-%m') AS month, COUNT(*) AS total
+        FROM olist_orders
+        GROUP BY month
+        ORDER BY month
+    </select>
+
+    <!-- 对应 countTotal 方法 -->
+    <select id="countTotal" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM olist_orders
+    </select>
+
+    <!-- 对应 sumAmount 方法 -->
+    <select id="sumAmount" resultType="java.lang.Double">
+        SELECT SUM(oi.price * oi.quantity) FROM olist_orders o 
+        JOIN olist_order_items oi ON o.order_id = oi.order_id
+    </select>
+
+    <!-- 对应 getDateCount 方法 -->
+    <select id="getDateCount" resultType="com.ecommerce.ecommerceanalysis.entity.domestic.DomesticDateCount">
+        SELECT DATE_FORMAT(order_purchase_timestamp, '%Y-%m-%d') AS date, COUNT(*) AS count
+        FROM olist_orders
+        GROUP BY date
+        ORDER BY date DESC
+        LIMIT 30
+    </select>
+
+    <!-- 搜索订单（带分页和关键词/品类筛选）- 空值兜底版本 -->
+    <select id="searchOrders" resultType="java.util.Map">
+        SELECT 
+            o.order_id AS id, 
+            o.order_id AS orderId, 
+            o.order_status AS status, 
+            IFNULL(oi.price, 0) AS amount, 
+            IFNULL(oi.quantity, 1) AS quantity, 
+            IFNULL(p.product_category_name, '其他/未分类') AS productCategory, 
+            IFNULL(p.product_category_name, '其他/未分类') AS category, 
+            IFNULL(p.product_category_name, '未分类商品') AS productName, 
+            IFNULL(c.customer_city, '未知城市') AS customerCity, 
+            IFNULL(c.customer_city, '未知城市') AS city, 
+            o.order_purchase_timestamp AS orderPurchaseTimestamp, 
+            DATE(o.order_purchase_timestamp) AS date 
+        FROM olist_orders o 
+        LEFT JOIN olist_order_items oi ON o.order_id = oi.order_id 
+        LEFT JOIN olist_products p ON oi.product_id = p.product_id 
+        LEFT JOIN olist_customers c ON o.customer_id = c.customer_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (o.order_id LIKE CONCAT('%', #{keyword}, '%') 
+                     OR c.customer_city LIKE CONCAT('%', #{keyword}, '%') 
+                     OR p.product_category_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="category != null and category != '' and category != '全部'">
+                AND p.product_category_name = #{category}
+            </if>
+        </where>
+        ORDER BY o.order_purchase_timestamp DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 统计筛选后的订单总数 -->
+    <select id="countSearchOrders" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT o.order_id)
+        FROM olist_orders o
+        LEFT JOIN olist_order_items oi ON o.order_id = oi.order_id
+        LEFT JOIN olist_products p ON oi.product_id = p.product_id
+        LEFT JOIN olist_customers c ON o.customer_id = c.customer_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (o.order_id LIKE CONCAT('%', #{keyword}, '%')
+                     OR c.customer_city LIKE CONCAT('%', #{keyword}, '%')
+                     OR p.product_category_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="category != null and category != '' and category != '全部'">
+                AND p.product_category_name = #{category}
+            </if>
+        </where>
+    </select>
+
+    <!-- 金额+订单数统计（带筛选） -->
+    <select id="getAmountStats" resultType="map">
+        SELECT COUNT(DISTINCT o.order_id) AS order_count,
+               COALESCE(SUM(oi.price * oi.quantity), 0) AS amount
+        FROM olist_orders o
+        LEFT JOIN olist_order_items oi ON o.order_id = oi.order_id
+        LEFT JOIN olist_products p ON oi.product_id = p.product_id
+        LEFT JOIN olist_customers c ON o.customer_id = c.customer_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (o.order_id LIKE CONCAT('%', #{keyword}, '%')
+                     OR c.customer_city LIKE CONCAT('%', #{keyword}, '%')
+                     OR p.product_category_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="category != null and category != ''">
+                AND p.product_category_name = #{category}
+            </if>
+        </where>
+    </select>
+
+    <!-- 1. 总订单数 -->
+    <select id="getTotalOrderCount" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT o.order_id)
+        FROM olist_orders o
+        LEFT JOIN olist_order_items oi ON o.order_id = oi.order_id
+        LEFT JOIN olist_products p ON oi.product_id = p.product_id
+        LEFT JOIN olist_customers c ON o.customer_id = c.customer_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (o.order_id LIKE CONCAT('%', #{keyword}, '%')
+                     OR c.customer_city LIKE CONCAT('%', #{keyword}, '%')
+                     OR p.product_category_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <!-- 2. 已完成订单数 -->
+    <select id="getCompletedOrderCount" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT o.order_id)
+        FROM olist_orders o
+        LEFT JOIN olist_order_items oi ON o.order_id = oi.order_id
+        LEFT JOIN olist_products p ON oi.product_id = p.product_id
+        LEFT JOIN olist_customers c ON o.customer_id = c.customer_id
+        WHERE o.order_status = 'delivered'
+        <if test="keyword != null and keyword != ''">
+            AND (o.order_id LIKE CONCAT('%', #{keyword}, '%')
+                 OR c.customer_city LIKE CONCAT('%', #{keyword}, '%')
+                 OR p.product_category_name LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+    </select>
+
+    <!-- 3. 总订单金额 -->
+    <select id="getTotalOrderAmount" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(oi.price * oi.quantity), 0)
+        FROM olist_orders o
+        LEFT JOIN olist_order_items oi ON o.order_id = oi.order_id
+        LEFT JOIN olist_products p ON oi.product_id = p.product_id
+        LEFT JOIN olist_customers c ON o.customer_id = c.customer_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (o.order_id LIKE CONCAT('%', #{keyword}, '%')
+                     OR c.customer_city LIKE CONCAT('%', #{keyword}, '%')
+                     OR p.product_category_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </select>
+
+</mapper>

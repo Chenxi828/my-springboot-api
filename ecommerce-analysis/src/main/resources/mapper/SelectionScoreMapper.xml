@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//MyBatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ecommerce.ecommerceanalysis.mapper.SelectionScoreMapper">
+    <insert id="insert">
+        INSERT INTO selection_score(category,market_score,supply_score,final_score,grade)
+        VALUES(#{param1},#{param2},#{param3},#{param4},#{param5})
+    </insert>
+
+    <update id="update">
+        UPDATE selection_score SET market_score=#{param2},supply_score=#{param3},
+                                   final_score=#{param4},grade=#{param5},update_time=NOW() WHERE category=#{param1}
+    </update>
+
+    <select id="getByCategory" resultType="map">
+        SELECT * FROM selection_score WHERE category=#{category}
+    </select>
+</mapper>
